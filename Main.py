@@ -11,6 +11,7 @@ cream = (238, 238, 210)
 yellow = (246, 246, 130)
 light_grey = (191, 191, 168)
 dark_grey = (94, 120, 69)
+dark_red = (255, 0, 0)
 
 gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('Chess')
@@ -107,7 +108,7 @@ def lanes(x, y, pieces, col='w'):
         qy -= size
         if (px, y) not in pieces and p:
             tiles.append((px, y))
-        elif p and col != colour(pieces[(px, py)]):
+        elif p and col != colour(pieces[(px, y)]):
             capture.append((px, y))
             p = False
         else:
@@ -122,7 +123,7 @@ def lanes(x, y, pieces, col='w'):
         if (x, py) not in pieces and r:
             tiles.append((x, py))
         elif r and col != colour(pieces[(x, py)]):
-            capture.append((x, y))
+            capture.append((x, py))
             r = False
         else:
             r = False
@@ -251,9 +252,9 @@ def pawn(x, y, pieces, col='w'):
         a = -1
     tiles = []
     capture = []
-    if (x + size, y - a * size) in pieces:
+    if (x + size, y - a * size) in pieces and col != colour(pieces[(x + size, y - a * size)]):
         capture.append((x + size, y - a * size))
-    if (x - size, y - a * size) in pieces:
+    if (x - size, y - a * size) in pieces and col != colour(pieces[(x - size, y - a * size)]):
         capture.append((x - size, y - a * size))
     if y == 280 + 200 * a:
         if (x, y - a * size) not in pieces:
@@ -289,7 +290,7 @@ def draw_bg(x, y, pieces, highlight=False, circles=False, red=False):
     replace_piece = False
     if (x, y) in pieces:
         replace_piece = True
-    if not highlight and not circles:
+    if not highlight and not circles and not red:
         if x/size % 2 == 0 and y/size % 2 == 1:
             pygame.draw.rect(gameDisplay, green, (x, y, size, size))
         elif x/size % 2 == 1 and y/size % 2 == 0:
@@ -305,11 +306,11 @@ def draw_bg(x, y, pieces, highlight=False, circles=False, red=False):
             pygame.draw.rect(gameDisplay, yellow, (x, y, size, size))
     elif red:
         if x/size % 2 == 0 and y/size % 2 == 1:
-            pygame.draw.rect(gameDisplay, dark_green, (x, y, size, size))
+            pygame.draw.rect(gameDisplay, dark_red, (x, y, size, size))
         elif x/size % 2 == 1 and y/size % 2 == 0:
-            pygame.draw.rect(gameDisplay, dark_green, (x, y, size, size))
+            pygame.draw.rect(gameDisplay, dark_red, (x, y, size, size))
         else:
-            pygame.draw.rect(gameDisplay, yellow, (x, y, size, size))
+            pygame.draw.rect(gameDisplay, dark_red, (x, y, size, size))
     elif circles:
         if x/size % 2 == 0 and y/size % 2 == 1:
             pygame.draw.circle(gameDisplay, dark_grey, (x + int(size/2), y + int(size/2)), int(size/6))
@@ -347,7 +348,6 @@ while not finished:
                 for pos in gl_mov:
                     if in_square(x, y, pos[0], pos[1]):
                         gameDisplay.blit(gl_piece, pos)
-                        print(gl_piece, gl_pos)
                         del pieces[gl_pos]
                         draw_bg(gl_pos[0], gl_pos[1], pieces)
                         pieces[pos] = gl_piece
@@ -364,10 +364,15 @@ while not finished:
                         draw_bg(pos[0], pos[1], pieces, highlight=True)
                         gameDisplay.blit(piece, pos)
                         for poss in moves(pos, piece, pieces, col=turn)[0]:
-                            print(poss)
                             draw_bg(poss[0], poss[1], pieces, circles=True)
                             draw_bg(poss[0], poss[1], pieces, circles=True)
                             gl_mov.append(poss)
+                        try:
+                            for cap in moves(pos, piece, pieces, col=turn)[1]:
+                                draw_bg(cap[0], cap[1], pieces, red=True)
+                                gl_mov.append(cap)
+                        except ValueError:
+                            pass
                         gl_piece = piece
                         gl_pos = pos
                         clicked = True
