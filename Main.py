@@ -12,15 +12,18 @@ yellow = (246, 246, 130)
 light_grey = (191, 191, 168)
 dark_grey = (94, 120, 69)
 dark_red = (255, 0, 0)
+blue = (80, 184, 231)
 
 gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('Chess')
 clock = pygame.time.Clock()
 finished = False
 clicked = False
+sound = True
 turn = 'w'
 FPS = 60
 gl_mov = []
+re = []
 
 pawn_w = pygame.image.load("C:/Users/Admin/PycharmProjects/GUI/Pieces/WhitePawn.png")
 pawn_b = pygame.image.load("C:/Users/Admin/PycharmProjects/GUI/Pieces/BlackPawn.png")
@@ -34,6 +37,11 @@ queen_w = pygame.image.load("C:/Users/Admin/PycharmProjects/GUI/Pieces/WhiteQuee
 queen_b = pygame.image.load("C:/Users/Admin/PycharmProjects/GUI/Pieces/BlackQueen.png")
 king_w = pygame.image.load("C:/Users/Admin/PycharmProjects/GUI/Pieces/WhiteKing.png")
 king_b = pygame.image.load("C:/Users/Admin/PycharmProjects/GUI/Pieces/BlackKing.png")
+
+move = pygame.mixer.Sound("C:/Users/Admin/PycharmProjects/GUI/Pieces/move.wav")
+check = pygame.mixer.Sound("C:/Users/Admin/PycharmProjects/GUI/Pieces/check.wav")
+error = pygame.mixer.Sound("C:/Users/Admin/PycharmProjects/GUI/Pieces/error.wav")
+take = pygame.mixer.Sound("C:/Users/Admin/PycharmProjects/GUI/Pieces/take.wav")
 
 pieces = {(0, 480): pawn_w,
           (80, 480): pawn_w,
@@ -286,11 +294,11 @@ def moves(pos, piece, pieces, col='w'):
     return poss, cap
 
 
-def draw_bg(x, y, pieces, highlight=False, circles=False, red=False):
+def draw_bg(x, y, pieces, highlight=False, circles=False, red=False, blu=False):
     replace_piece = False
     if (x, y) in pieces:
         replace_piece = True
-    if not highlight and not circles and not red:
+    if not highlight and not circles and not red and not blu:
         if x/size % 2 == 0 and y/size % 2 == 1:
             pygame.draw.rect(gameDisplay, green, (x, y, size, size))
         elif x/size % 2 == 1 and y/size % 2 == 0:
@@ -311,6 +319,13 @@ def draw_bg(x, y, pieces, highlight=False, circles=False, red=False):
             pygame.draw.rect(gameDisplay, dark_red, (x, y, size, size))
         else:
             pygame.draw.rect(gameDisplay, dark_red, (x, y, size, size))
+    elif blu:
+        if x/size % 2 == 0 and y/size % 2 == 1:
+            pygame.draw.rect(gameDisplay, blue, (x, y, size, size))
+        elif x/size % 2 == 1 and y/size % 2 == 0:
+            pygame.draw.rect(gameDisplay, blue, (x, y, size, size))
+        else:
+            pygame.draw.rect(gameDisplay, blue, (x, y, size, size))
     elif circles:
         if x/size % 2 == 0 and y/size % 2 == 1:
             pygame.draw.circle(gameDisplay, dark_grey, (x + int(size/2), y + int(size/2)), int(size/6))
@@ -344,17 +359,42 @@ while not finished:
                 for item in gl_mov:
                     draw_bg(item[0], item[1], pieces)
                 draw_bg(gl_pos[0], gl_pos[1], pieces)
+                if gl_pos in re:
+                    draw_bg(gl_pos[0], gl_pos[1], pieces, red=True)
                 gameDisplay.blit(gl_piece, gl_pos)
                 for pos in gl_mov:
                     if in_square(x, y, pos[0], pos[1]):
-                        gameDisplay.blit(gl_piece, pos)
+                        if pos in pieces:
+                            take.play()
+                        else:
+                            move.play()
                         del pieces[gl_pos]
-                        draw_bg(gl_pos[0], gl_pos[1], pieces)
                         pieces[pos] = gl_piece
+                        draw_bg(gl_pos[0], gl_pos[1], pieces)
+                        draw_bg(pos[0], pos[1], pieces)
+                        gameDisplay.blit(gl_piece, pos)
+                        for item in re:
+                            draw_bg(item[0], item[1], pieces)
+                        re = []
+                        try:
+                            for cap in moves(pos, gl_piece, pieces, col=turn)[1]:
+                                draw_bg(cap[0], cap[1], pieces, red=True)
+                                re.append(cap)
+                                if pieces[cap] == king_w or pieces[cap] == king_b:
+                                    check.play()
+                                    draw_bg(cap[0], cap[1], pieces, blu=True)
+                        except ValueError:
+                            pass
                         if turn == 'w':
                             turn = 'b'
                         else:
                             turn = 'w'
+                        sound = False
+                        break
+                if sound:
+                    error.play()
+                else:
+                    sound = True
                 clicked = False
             else:
                 for pos, piece in pieces.items():
@@ -364,7 +404,6 @@ while not finished:
                         draw_bg(pos[0], pos[1], pieces, highlight=True)
                         gameDisplay.blit(piece, pos)
                         for poss in moves(pos, piece, pieces, col=turn)[0]:
-                            draw_bg(poss[0], poss[1], pieces, circles=True)
                             draw_bg(poss[0], poss[1], pieces, circles=True)
                             gl_mov.append(poss)
                         try:
