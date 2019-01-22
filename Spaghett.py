@@ -1,4 +1,5 @@
 import pygame
+import numpy as np
 
 # Init
 pygame.init()
@@ -146,57 +147,20 @@ def lanes(x, y, pieces, col='w'):
 
 
 def diagonals(x, y, pieces, col='w'):
-    px = x
-    py = y
-    qx = x
-    qy = y
-    rx = x
-    ry = y
-    sx = x
-    sy = y
-    p = True
-    q = True
-    r = True
-    s = True
+    p = np.array([(x, y), (x, y), (x, y), (x, y)])
+    l = [True, True, True, True]
     tiles = []
     capture = []
-    for n in range(8):
-        px += size
-        py += size
-        qx += size
-        qy -= size
-        rx -= size
-        ry -= size
-        sx -= size
-        sy += size
-        if (px, py) not in pieces and p:
-            tiles.append((px, py))
-        elif p and col != colour(pieces[(px, py)]):
-            capture.append((px, py))
-            p = False
-        else:
-            p = False
-        if (qx, qy) not in pieces and q:
-            tiles.append((qx, qy))
-        elif q and col != colour(pieces[(qx, qy)]):
-            capture.append((qx, qy))
-            q = False
-        else:
-            q = False
-        if (rx, ry) not in pieces and r:
-            tiles.append((rx, ry))
-        elif r and col != colour(pieces[(rx, ry)]):
-            capture.append((rx, ry))
-            r = False
-        else:
-            r = False
-        if (sx, sy) not in pieces and s:
-            tiles.append((sx, sy))
-        elif s and col != colour(pieces[(sx, sy)]):
-            capture.append((sx, sy))
-            s = False
-        else:
-            s = False
+    for m in range(8):
+        p += [(size, size), (size, -size), (-size, -size), (-size, size)]
+        for n in range(4):
+            if tuple(p[n]) not in pieces and l[n]:
+                tiles.append(tuple(p[n]))
+            elif l[n] and col != colour(pieces[tuple(p[n])]):
+                capture.append(tuple(p[n]))
+                l[n] = False
+            else:
+                l[n] = False
     return tiles, capture
 
 
